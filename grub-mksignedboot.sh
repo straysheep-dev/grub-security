@@ -5,7 +5,9 @@
 # https://www.gnu.org/software/grub/manual/grub/grub.html#Security
 
 # Tested on:
-# Ubuntu 20.04
+# Ubuntu 20.04 (Desktop)
+# Ubuntu 22.04 (Server)
+# Kali 2022.3
 
 # What this does:
 # Creates and embeds a GPG key into a custom GRUB efi binary to enforce signature checking of GRUB components under /boot
@@ -85,7 +87,7 @@ EOF
 
 	echo -e "[${BLUE}>${RESET}]Generating a GPG key for signing GRUB components..."
 	gpg --batch --generate-key /root/grub-gpg-params > /dev/null
-	
+
 	# Export public key
 	echo -e "[${BLUE}>${RESET}]Exporting public key to ${YELLOW}/boot/grub/grub.pub${RESET}..."
 	gpg --export 'grub-signing-key' > /boot/grub/grub.pub
@@ -103,7 +105,7 @@ else
 
 		exit 1
 	fi
-	
+
 	# Check if a custom image is already built, and ask to install it
 	if [[ -e /boot/efi/EFI/"$OS_ID"/grub_customx64.efi ]]; then
 		echo ""
@@ -136,11 +138,11 @@ fi
 
 # Set GRUB to show a countdown after boot to enter the GRUB menu
 if ! (grep -Pqx "^GRUB_TIMEOUT=3$" /etc/default/grub); then
-	sed -i 's/^GRUB_TIMEOUT=0$/GRUB_TIMEOUT=3/' /etc/default/grub
+	sed -i 's/^#\?GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=3/' /etc/default/grub
 	echo -e "[${BLUE}>${RESET}]Setting ${BOLD}GRUB_TIMEOUT=3${RESET}..."
 fi
 if ! (grep -Pqx "^GRUB_TIMEOUT_STYLE=countdown$" /etc/default/grub); then
-	sed -i 's/^GRUB_TIMEOUT_STYLE=hidden$/GRUB_TIMEOUT_STYLE=countdown/' /etc/default/grub
+	sed -i 's/^#\?GRUB_TIMEOUT_STYLE=.*$/GRUB_TIMEOUT_STYLE=countdown/' /etc/default/grub
 	echo -e "[${BLUE}>${RESET}]Setting ${BOLD}GRUB_TIMEOUT_STYLE=countdown${RESET}..."
 fi
 
@@ -156,11 +158,22 @@ fi
 # Generate the custom GRUB efi binary
 # This should always be done when updating the GRUB components, kernel, or signatures
 # This ensures any updates to GRUB are embedded within the latest efi binary
-echo -e "[${BLUE}>${RESET}]Running grub-mkstandalone..."
 # This command was adapted directly from the answer by user Fonic here:
 # https://unix.stackexchange.com/questions/531992/enabling-check-signatures-in-grub
+
+GRUB_VER="$(grub-install --version | awk '{print $3}')"
+echo -e "[${BLUE}i${RESET}]GRUB Version: ${YELLOW}$GRUB_VER${RESET}"
+
 # As mentioned in the post linked above, to improve this section a check for 'grub-install --version' could be done to adjust the command arguments based on the GRUB version
-if ! (grub-mkstandalone --format=x86_64-efi --output=/boot/efi/EFI/"$OS_ID"/grub_customx64.efi --pubkey=/boot/grub/grub.pub --modules="verifiers gcry_sha256 gcry_sha512 gcry_dsa gcry_rsa" /boot/grub/grub.cfg=/boot/grub/grub.cfg); then
+# Check if version is below 2.06:
+if (echo "$GRUB_VER" | grep -Pq "2\.0[0-5]"); then
+	MODULES='verifiers gcry_sha256 gcry_sha512 gcry_dsa gcry_rsa'
+else
+	MODULES='gcry_sha256 gcry_sha512 gcry_dsa gcry_rsa'
+fi
+
+echo -e "[${BLUE}>${RESET}]Running grub-mkstandalone..."
+if ! (grub-mkstandalone --format=x86_64-efi --output=/boot/efi/EFI/"$OS_ID"/grub_customx64.efi --pubkey=/boot/grub/grub.pub --modules="$MODULES" /boot/grub/grub.cfg=/boot/grub/grub.cfg); then
 	echo -e "[${RED}i${RESET}]Error compiling custom GRUB image. Quitting."
 	exit 1
 else
@@ -175,7 +188,7 @@ fi
 
 # Remove old signatures when updating
 if (find /boot -type f -name "*.sig" -print0 | xargs -0 sudo rm 2>/dev/null); then
-	echo -e "[${BLUE}i${RESET}]Removing previous signatures..."
+	echo -e "[${RED}i${RESET}]Removing previous signatures..."
 fi
 
 # Generate new signatures
