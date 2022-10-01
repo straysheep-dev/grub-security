@@ -22,6 +22,9 @@
 # https://static.open-scap.org/ssg-guides/ssg-ubuntu2004-guide-stig.html
 # https://github.com/ComplianceAsCode/content
 
+# Thanks to this question posted by user Daniel, and answer provided by user Fonic:
+# https://unix.stackexchange.com/questions/531992/enabling-check-signatures-in-grub
+
 BLUE="\033[01;34m"   # information
 GREEN="\033[01;32m"  # information
 YELLOW="\033[01;33m" # information
@@ -149,6 +152,9 @@ fi
 # This should always be done when updating the GRUB components, kernel, or signatures
 # This ensures any updates to GRUB are embedded within the latest efi binary
 echo -e "[${BLUE}>${RESET}]Running grub-mkstandalone..."
+# This command was adapted directly from the answer by user Fonic here:
+# https://unix.stackexchange.com/questions/531992/enabling-check-signatures-in-grub
+# As mentioned in the post linked above, to improve this section a check for 'grub-install --version' could be done to adjust the command arguments based on the GRUB version
 if ! (grub-mkstandalone --format=x86_64-efi --output=/boot/efi/EFI/"$OS_ID"/grub_customx64.efi --pubkey=/boot/grub/grub.pub --modules="verifiers gcry_sha256 gcry_sha512 gcry_dsa gcry_rsa" /boot/grub/grub.cfg=/boot/grub/grub.cfg); then
 	echo -e "[${RED}i${RESET}]Error compiling custom GRUB image. Quitting."
 	exit 1
