@@ -93,6 +93,8 @@ Compiling a new efi binary with `grub-mkstandalone` seems to be required to 'pre
 - Simply running `sudo grub-install /dev/sda --pubkey /boot/grub/grub.pub` does not enforce signature checking.
 - Even running `sudo grub-mkimage ...` and replacing the `core.efi` binary under `/boot/grub/x86_64-efi/` does not enforce signature checking.
 
+As you'll see below, `grub-mkstandalone` invokes `grub-mkimage`. Using `--verbose` to capture that command string, copy and pasting this command, and modifying it to execute still does not work. It appears to be missing the correct argument for `--memdisk` which `grub-mkstandalone` must generate in a temporary location at runtime.
+
 You can verify this from a grub shell after trying the above steps for yourself by running:
 
 ```grub
