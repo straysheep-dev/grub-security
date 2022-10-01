@@ -280,7 +280,6 @@ Enter the following lines (with your own password hash) *below the existing comm
 ```
 set superusers="admin"
 password_pbkdf2 admin grub.pbkdf2.sha512.10000.4DC37841103E9C41817DB083383337...
-}
 ```
 
 This will require a password to move past the GRUB menu, meaning even just to boot into the OS. This can be improved by allowing anyone to boot into the installed OS, but only the local administrator can modify GRUB or access the other menu items such as the firmware menu.
