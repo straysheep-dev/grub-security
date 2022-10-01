@@ -10,7 +10,10 @@ The steps to enable signature checking do not appear to be fully documented in G
 
 - Ubuntu 20.04 (Desktop)
 - Ubuntu 22.04 (Server)
-- Kali 2022.3 (Some files under `/boot` will not be signed and GRUB will complain, but they are not necessary to be signed)
+- Kali 2022.3
+	* Some files under `/boot` will not be signed and GRUB will complain
+	* These files do not need to be signed for Kali to boot
+	* Removing any other signatures will still prevent Kali from booting
 
 ---
 
