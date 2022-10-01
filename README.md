@@ -1,21 +1,23 @@
 # GRUB Security
 
-Security configurations for GRUB, a common Linux bootloader.
+Security configurations for [GRUB](https://www.gnu.org/software/grub/), a common Linux bootloader.
 
 The steps to enable signature checking do not appear to be fully documented in GRUB's manual (at least as far as what's required in recent Ubuntu desktop releases), which is why this repository and the tool [grub-mksignedboot.sh](/grub-mksignedboot.sh) were created. This tool will do everything outlined in this README automatically, and can be run again to update signatures.
 
 - [GRUB Security Manual](https://www.gnu.org/software/grub/manual/grub/grub.html#Security)
 
+---
+
 This README covers two main points:
 
-- Enforce signature checking in GRUB of the critical `/boot` components
+- Enforce signature checking in GRUB for the critical `/boot` components
 - Password protect the GRUB menu
 
 In both cases this does not prevent tampering, the goal is to detect it.
 
-Signing all of the /boot files means any modifications to them will *prevent the system from booting*. This should serve as a warning to repeat and be familiar with these steps in a virtual machine or a test system before using them on production machines.
+Signing all of the `/boot` files means any modifications to them will *prevent the system from booting*. This should serve as a warning to repeat and be familiar with these steps in a virtual machine or a test system before using them on production machines.
 
-Password protecting both the UEFI/BIOS menu, and the GRUB menu requires a (non-targeted) attacker to open the case of the device, and remove your internal drives (mounting them directly to a system of their own) to modify the boot partitions. *This can be detected by embedded UEFI/BIOS tamper protection mechanisms included by OEM's like Dell, or by sealing the screws on your case with paint or nail polish which won't prevent access but clearly shows if the case was opened.* Thanks to [Johannes Ullrich and the daily Stormcast](https://isc.sans.edu/podcast.html) as well as [Jim Ducroiset from Active Countermeasuers](https://www.youtube.com/watch?v=8izmlbFkBo4) for sharing the tip on using paint or nail polish!
+Password protecting both the UEFI/BIOS menu, and the GRUB menu requires a (non-targeted) attacker to open the case of the device, and remove your internal drives (mounting them directly to a system of their own) to modify the boot partitions. *This can be detected by embedded UEFI/BIOS tamper protection mechanisms included by OEM's like Dell, or by sealing the screws on your case with paint or nail polish which won't prevent access but clearly shows if the case was opened.* Thanks to [Johannes Ullrich and the Daily StormCast](https://isc.sans.edu/podcast.html) as well as [Jim Ducroiset from Active Countermeasuers](https://www.youtube.com/watch?v=8izmlbFkBo4) for sharing the tip on using paint or nail polish!
 
 This is an ideal situation. In less than ideal situations bypasses exist in less secure firmware which can allow attackers with physical access to enter the firmware's menu by connecting over external ports and sending a payload.
 
@@ -23,7 +25,7 @@ Ultimately this is meant to prevent non-targeted attacks where the adversary has
 
 #### IMPORTANT:
 
-This does *NOT* prevent attackers with physical access from modifying your firmware, use a firmware password, TPM measurements, Measured Boot / vboot, or SecureBoot for this. Firmware is *below* the boot loader and the operating system.
+This does *NOT* prevent attackers with physical access from modifying your firmware, use a firmware password, TPM measurements, [Measured Boot / vboot](https://github.com/coreboot/coreboot/blob/master/Documentation/security/vboot/measured_boot.md), or [SecureBoot](https://wiki.ubuntu.com/UEFI/SecureBoot) for this. Firmware is *below* the boot loader and the operating system.
 
 For additional technical resources on firmware, boot, and lower level security, [Paul Asadoorian](https://twitter.com/securityweekly)'s 3 part series on these topics is a great quick-start with examples:
 
@@ -35,21 +37,23 @@ For additional technical resources on firmware, boot, and lower level security, 
 
 - Create a GPG signing key just for GRUB files and `/boot` components
 - Save a *non-ascii* export of the public key to `/boot/grub/grub.pub`
-- Use `grub-mkstandalone` to compile a custom grub efi binary with signature checking modules and our public key embedded
+- Use `grub-mkstandalone` to compile a custom GRUB efi binary with signature checking modules and our public key embedded
 - Save this binary next to the current one, as `/boot/efi/EFI/ubuntu/grub_customx64.efi`
 - Sign all of the GRUB / boot components with the GPG key
 - Password protect the GRUB menu, create a single administrative user
 - Repeat the steps above to update GRUB and embed the admin user into the GRUB efi binary
 
+**NOTE**: *The path `/boot/efi/EFI/ubuntu/` is used as this is the path on both 20.04 and 22.04. This path may change depending on the OS you're using.*
+
 --- 
 
 ## Generate a GPG signing key
 
-Most if not all of these operations will require root. We'll use the /root directory and root's GPG keyring, so only root has access.
+Most if not all of these operations will require root. We'll use the `/root` directory and root's GPG keyring, so only root has access.
 
-Create the key.
+Create the key:
 
-- Enter grub-signing-key as the name
+- Enter "grub-signing-key" as the name
 - Leave email blank
 - For manually testing, use a simple password like 123456
 
@@ -59,24 +63,24 @@ sudo gpg --gen-key
 
 Keep in mind root does not have the same `gpg.conf` as you, and for signing GRUB and boot components, it's less important but worth considering if you need to make changes there.
 
-Next we'll need to export the public key. This *MUST* be in a binary format (not `--armor`'d output) or GRUB will not be able to read it.
+Next we'll need to export the public key. This *MUST* be in a binary format (not `--armor`) or GRUB will not be able to read it.
 
 ```bash
-sudo gpg --export '$KEYID' > /boot/grub/grub.pub
+sudo gpg --export 'grub-signing-key' > /boot/grub/grub.pub
 ```
 
 `/boot/grub/grub.pub` was chosen because it's within the `/boot` partition, making it available to read if needed for recovery. Otherwise this key can be read from anywhere by `grub-mkstandalone` to embed it at compile time.
 
 ## Configure GRUB for testing
 
-So you can easily boot into a GRUB shell and review changes on the next reboot:
+Update `grub.cfg` so you can easily boot into a GRUB shell and review changes on the next reboot:
 
 ```bash
 sudo sed -i 's/^GRUB_TIMEOUT=0$/#GRUB_TIMEOUT=0/' /etc/default/grub
 sudo sed -i 's/^GRUB_TIMEOUT_STYLE=*$/GRUB_TIMEOUT_STYLE=countdown/' /etc/default/grub
 ```
 
-You won't need to make any additional modifications to grub config files for signature verification. From the [grub manual](https://www.gnu.org/software/grub/manual/grub/grub.html#Using-digital-signatures):
+You won't need to make any additional modifications to GRUB config files for signature verification. From the [GRUB manual](https://www.gnu.org/software/grub/manual/grub/grub.html#Using-digital-signatures):
 
 > ...Passing one or more `--pubkey` options to `grub-mkimage` implicitly defines `check_signatures` equal to `enforce` in core.img prior to processing any configuration files.
 
@@ -84,7 +88,7 @@ We never need to run `grub-mkimage` directly, as it's run as part of `grub-mksta
 
 ## The grubx64.efi binary
 
-This seems to be required to 'preload' the signature verification modules in GRUB to successfully perform signature validation.
+Compiling a new efi binary with `grub-mkstandalone` seems to be required to 'preload' the signature verification modules in GRUB to successfully perform signature validation.
 
 - Simply running `sudo grub-install /dev/sda --pubkey /boot/grub/grub.pub` does not enforce signature checking.
 - Even running `sudo grub-mkimage ...` and replacing the `core.efi` binary under `/boot/grub/x86_64-efi/` does not enforce signature checking.
@@ -95,15 +99,13 @@ You can verify this from a grub shell after trying the above steps for yourself 
 list_trusted
 ```
 
-If you don't receive any output, the public key is not loaded or embedded in the current `grubx64.efi` image.
+If you don't receive any output, the public key is not loaded or embedded in the current `grubx64.efi` or `core.efi` image.
 
 What we need to use is `grub-mkstandalone`.
 
 - We need to replace `/boot/efi/EFI/ubuntu/grubx64.efi` with our custom image that verifies signatures and knows our public key
 - During testing we'll write the custom image to `/boot/efi/EFI/ubuntu/grub_customx64.efi` so the original efi binary is still the default image to boot from
 - We'll attempt to boot the custom image from an EFI shell and address or note any issues from there
-
-**NOTE**: *The path `/boot/efi/EFI/ubuntu/` is used as this is the path on both 20.04 and 22.04. This path may change depending on the OS you're using.*
 
 An easy way to test GRUB efi binaries is using a virtualization platform like VMware:
 
@@ -135,7 +137,7 @@ Thanks to this question posted by user Daniel, and answer provided by user Fonic
 grub-install --version
 ```
 
-This is the command to create a new grub x86_64 efi binary:
+This is the command to create a new `grubx64.efi` binary:
 
 ```bash
 # Always update-grub first, in case there have been any changes
@@ -156,7 +158,7 @@ After the command exits, the new efi binary will be under `/boot/efi/EFI/ubuntu/
 
 ## Signing boot files
 
-*This should always be the last step, once the GRUB binary has the public key and latst config file embedded you can sign everything to be sure all GRUB components will load*
+*This should always be the last step, once the GRUB binary has the public key and latst config file embedded you can sign everything to be sure all GRUB components will load.*
 
 - [GRUB - Using digital signatures](https://www.gnu.org/software/grub/manual/grub/grub.html#Using-digital-signatures)
 
@@ -265,7 +267,7 @@ grub-mkpasswd-pbkdf2
 
 It's the entire string, starting with `grub.pbkdf2.sha512.10000...`, which we'll need to highlight and copy.
 
-### Add a user and password to /etc/grub.d/40_custom
+### Add a user and password to `/etc/grub.d/40_custom`
 
 This creates a single administrative user and password protects all GRUB menu entries.
 
@@ -285,5 +287,5 @@ Finally, after adding your administrative user to`/etc/grub.d/40_custom`, you'll
 - `sudo grub-mkstandalone --format=x86_64-efi --output=/boot/efi/EFI/ubuntu/grub_customx64.efi --pubkey=/boot/grub/grub.pub --modules="verifiers gcry_sha256 gcry_sha512 gcry_dsa gcry_rsa" /boot/grub/grub.cfg=/boot/grub/grub.cfg`
 - Sign all of the GRUB components again
 
-On the next boot you'll be taken to the GRUB menu and asked for a password before taking any action.
+On the next boot you'll be taken to the GRUB menu and asked for a password before any action can be taken.
 
