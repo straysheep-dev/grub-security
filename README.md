@@ -6,7 +6,11 @@ The steps to enable signature checking do not appear to be fully documented in G
 
 - [GRUB Security Manual](https://www.gnu.org/software/grub/manual/grub/grub.html#Security)
 
-**NOTE**: [grub-mksignedboot.sh](/grub-mksignedboot.sh) has only been tested on Ubuntu 20.04.
+**NOTE**: [grub-mksignedboot.sh](/grub-mksignedboot.sh) has only been tested on:
+
+- Ubuntu 20.04 (Desktop)
+- Ubuntu 22.04 (Server)
+- Kali 2022.3 (Some files under `/boot` will not be signed and GRUB will complain, but they are not necessary to be signed)
 
 ---
 
@@ -101,9 +105,10 @@ You can verify this from a grub shell after trying the above steps for yourself 
 
 ```grub
 list_trusted
+echo $check_signatures
 ```
 
-If you don't receive any output, the public key is not loaded or embedded in the current `grubx64.efi` or `core.efi` image.
+If you don't receive any output, the public key and the GRUB configuration are not loaded or embedded in the current `grubx64.efi` or `core.efi` image.
 
 What we need to use is `grub-mkstandalone`.
 
