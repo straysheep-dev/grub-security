@@ -38,7 +38,11 @@ OS_ID="$(grep -P "^ID=" /etc/os-release | cut -d '=' -f 2)"
 # Generates a single random passprhase if the signing 
 # key does not exist, stores it in this variable
 # https://github.com/drduh/YubiKey-Guide#master-key
-PASSPHRASE="$(tr -dc '[:alnum:]' < /dev/urandom | fold -w 32 | head -n 1)"
+if ! [[ -e /root/grub-gpg-params ]]; then
+	PASSPHRASE="$(tr -dc '[:alnum:]' < /dev/urandom | fold -w 32 | head -n 1)"
+else
+	PASSPHRASE="$(grep -F 'Passphrase: ' /root/grub-gpg-params | awk '{print $2}')"
+fi
 
 # Must be run as root
 if ! [[ "$EUID" == 0 ]]; then
@@ -114,9 +118,7 @@ else
 			until [[ $UPDATE_CHOICE =~ ^(y|n)$ ]]; do
 				read -rp "Selection [y/n]: " -e -i n UPDATE_CHOICE
 			done
-			if [ "$UPDATE_CHOICE" == 'y' ]; then
-				return 1
-			else
+			if [ "$UPDATE_CHOICE" == 'n' ]; then
 				exit 0
 			fi
 		elif [ "$INSTALL_CHOICE" == 'y' ]; then
