@@ -4,6 +4,9 @@
 
 # https://www.gnu.org/software/grub/manual/grub/grub.html#Security
 
+# Tested on:
+# Ubuntu 20.04
+
 # What this does:
 # Creates and embeds a GPG key into a custom GRUB efi binary to enforce signature checking of GRUB components under /boot
 

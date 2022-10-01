@@ -6,6 +6,8 @@ The steps to enable signature checking do not appear to be fully documented in G
 
 - [GRUB Security Manual](https://www.gnu.org/software/grub/manual/grub/grub.html#Security)
 
+**NOTE**: [grub-mksignedboot.sh](/grub-mksignedboot.sh) has only been tested on Ubuntu 20.04.
+
 ---
 
 This README covers two main points:
