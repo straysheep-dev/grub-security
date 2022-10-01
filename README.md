@@ -162,7 +162,7 @@ After the command exits, the new efi binary will be under `/boot/efi/EFI/ubuntu/
 
 ## Signing boot files
 
-*This should always be the last step, once the GRUB binary has the public key and latst config file embedded you can sign everything to be sure all GRUB components will load.*
+*This should always be the last step, once the GRUB binary has the public key and latest config file embedded you can sign everything to be sure all GRUB components will load.*
 
 - [GRUB - Using digital signatures](https://www.gnu.org/software/grub/manual/grub/grub.html#Using-digital-signatures)
 
@@ -220,7 +220,7 @@ A quick recap of what we've done up to now:
 
 - Create a GPG signing key just for GRUB files and `/boot` components
 - Save a *non-ascii* export of the public key to `/boot/grub/grub.pub`
-- Use `grub-mkstandalone` to compile a custom grub efi binary with signature checking modules and our public key embedded
+- Use `grub-mkstandalone` to compile a custom GRUB efi binary with signature checking modules and our public key embedded
 - Save this binary next to the current one, as `/boot/efi/EFI/ubuntu/grub_customx64.efi`
 - Sign all of the GRUB / boot components with the GPG key
 
@@ -261,7 +261,7 @@ This is a good way to test this on a small set of systems.
 
 [GRUB - Authentication and authorisation](https://www.gnu.org/software/grub/manual/grub/grub.html#Authentication-and-authorisation)
 
-This is done last so you aren't stuck entering a GRUB password while testing and configuring signature verification in the GRUB menu.
+This is done last so you aren't stuck entering a GRUB password while testing and configuring signature verification.
 
 Generate a hash of your password:
 
@@ -269,13 +269,13 @@ Generate a hash of your password:
 grub-mkpasswd-pbkdf2
 ```
 
-It's the entire string, starting with `grub.pbkdf2.sha512.10000...`, which we'll need to highlight and copy.
+The hash is the entire string, starting with `grub.pbkdf2.sha512.10000...`, which we'll need to highlight and copy.
 
-### Add a user and password to `/etc/grub.d/40_custom`
+## Add a user and password to `/etc/grub.d/40_custom`
 
 This creates a single administrative user and password protects all GRUB menu entries.
 
-Enter the following lines (with your own password hash) below the comments at the top of `/etc/grub.d/40_custom`:
+Enter the following lines (with your own password hash) *below the existing comments* at the top of `/etc/grub.d/40_custom`:
 
 ```
 set superusers="admin"
@@ -291,5 +291,5 @@ Finally, after adding your administrative user to`/etc/grub.d/40_custom`, you'll
 - `sudo grub-mkstandalone --format=x86_64-efi --output=/boot/efi/EFI/ubuntu/grub_customx64.efi --pubkey=/boot/grub/grub.pub --modules="verifiers gcry_sha256 gcry_sha512 gcry_dsa gcry_rsa" /boot/grub/grub.cfg=/boot/grub/grub.cfg`
 - Sign all of the GRUB components again
 
-On the next boot you'll be taken to the GRUB menu and asked for a password before any action can be taken.
+On the next boot (using the custom efi binary) you'll be taken to the GRUB menu and asked for a password before any action can be taken.
 
